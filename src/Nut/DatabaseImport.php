@@ -36,9 +36,6 @@ class DatabaseImport extends BaseCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        // Warn that this is experimental
-        $this->io->warning('This command may overwrite or replace data in the current database.');
-
         $file = $input->getOption('file');
         $directory = $input->getOption('directory');
         if (empty($file) && empty($directory)) {
@@ -61,7 +58,7 @@ class DatabaseImport extends BaseCommand
 
         // If we have scanned a directory then we skip the file option
         if (!count($files)) {
-            $files = $input->getOption('file');
+            $files = (array) $input->getOption('file');
             if (empty($files)) {
                 throw new \RuntimeException('The --file option is required.');
             }
@@ -93,13 +90,12 @@ class DatabaseImport extends BaseCommand
 
         if ($import->getWarning()) {
             $this->io->warning($import->getWarningMessages());
-            $failed = true;
         }
 
         if ($import->getNotice()) {
             $this->io->note($import->getNoticeMessages());
-            $failed = true;
         }
+
         if ($failed) {
             $this->io->error('Aborting import!');
 

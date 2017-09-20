@@ -35,9 +35,6 @@ class DatabaseExport extends BaseCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        // Warn that this is experimental
-        $this->io->warning('This command operates on the current database, taking a backup is advised before export.');
-
         // Check if export file can be created
         $file = $input->getOption('file');
         $directory = $input->getOption('directory');
@@ -66,6 +63,7 @@ class DatabaseExport extends BaseCommand
             ->checkMigrationFilesExist('export')
             ->checkMigrationFilesWriteable()
             ->checkContenttypeValid($input->getOption('contenttypes'))
+            ->exportMetaInformation()
             ->exportContenttypesRecords()
         ;
 

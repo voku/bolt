@@ -14,12 +14,17 @@ use Bolt\Storage\Repository;
  */
 class Import extends AbstractMigration
 {
-    /** @var array $data */
-    protected $data;
+    /** @var array */
+    protected $data = [];
 
+    /** @var array */
     protected $relationQueue = [];
 
+    /** @var boolean */
     protected $allowOverwrite = false;
+
+    /** @var array */
+    protected $contenttypes = [];
 
     /**
      * Set the migration files.
@@ -118,6 +123,15 @@ class Import extends AbstractMigration
 
             // Validate all the contenttypes in this file
             foreach ($data as $contenttypeslug => $values) {
+
+                // If we have meta information, output it, and continue with the next one.
+                if ($contenttypeslug === 'bolt_meta_information') {
+                    foreach ($values as $key => $value) {
+                        $this->setNotice(true)->setNoticeMessage("Meta information: {$key} = {$value}");
+                    }
+                    continue(2);
+                }
+
                 if (!$this->checkContenttypesValid($filename, $contenttypeslug)) {
                     return false;
                 }
@@ -169,8 +183,10 @@ class Import extends AbstractMigration
      */
     protected function insertRecord($filename, $contenttypeslug, array $values)
     {
+        $title = $this->getTitle($contenttypeslug, $values);
+
         // Determine a/the slug
-        $slug = isset($values['slug']) ? $values['slug'] : substr($this->app['slugify']->slugify($values['title']), 0, 127);
+        $slug = isset($values['slug']) ? $values['slug'] : substr($this->app['slugify']->slugify($title), 0, 127);
 
         if (!$this->isRecordUnique($contenttypeslug, $slug)) {
             $this->setWarning(true)->setWarningMessage("File '$filename' has an exiting ContentType '$contenttypeslug' with the slug '$slug'! Skipping record.");
@@ -183,13 +199,6 @@ class Import extends AbstractMigration
 
         // Transform the 'publish' action to a 'published' status
         $status = $status === 'publish' ? 'published' : $status;
-
-        // Insist on a title field
-        if (!isset($values['title'])) {
-            $this->setWarning(true)->setWarningMessage("File '$filename' has a '$contenttypeslug' with a missing title field! Skipping record.");
-
-            return false;
-        }
 
         // If not given a publish date, set it to now
         if (!isset($values['datepublish'])) {
@@ -224,11 +233,11 @@ class Import extends AbstractMigration
         }
 
         if ($repo->save($record) === false) {
-            $this->setWarning(true)->setWarningMessage("Failed to imported record with title: {$values['title']} from '$filename'! Skipping record.");
+            $this->setWarning(true)->setWarningMessage("Failed to imported record with title: {$title} from '$filename'! Skipping record.");
 
             return false;
         }
-        $this->setNotice(true)->setNoticeMessage("Imported record to {$contenttypeslug} with title: {$values['title']}.");
+        $this->setNotice(true)->setNoticeMessage("Imported record to {$contenttypeslug} with title: {$title}.");
 
         return true;
     }
@@ -272,5 +281,32 @@ class Import extends AbstractMigration
             $entity->setRelation($related);
             $this->app['storage']->save($entity);
         }
+    }
+
+    /**
+     * Get a title, for display purposes.
+     *
+     * @param string $contenttypeslug
+     * @param array  $values
+     *
+     * @return string
+     */
+    protected function getTitle($contenttypeslug, $values)
+    {
+        if (isset($this->contenttypes[$contenttypeslug]['fields']['slug']['uses'])) {
+            $sluguses = (array) $this->contenttypes[$contenttypeslug]['fields']['slug']['uses'];
+        } else {
+            $sluguses = ['title'];
+        }
+
+        $title = [];
+
+        foreach ($sluguses as $key) {
+            if (isset($values[$key])) {
+                $title[] = $values[$key];
+            }
+        }
+
+        return (!empty($title) ? implode(' ', $title) : '[Untitled Record]');
     }
 }

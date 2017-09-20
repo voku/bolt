@@ -2,6 +2,7 @@
 
 namespace Bolt\Storage\Migration;
 
+use Bolt\Version;
 use Doctrine\Common\Collections\Collection;
 use Symfony\Component\Filesystem\Exception\IOException;
 
@@ -14,8 +15,26 @@ class Export extends AbstractMigration
 {
     /** @var array */
     private $contenttypes = [];
+
     /** @var string */
     private $hash;
+
+    /**
+     * Export the meta information to the export file.
+     */
+    public function exportMetaInformation()
+    {
+        $data = [
+            'bolt_meta_information' => [
+                'date_generated' => date('Y-m-d H:i:s'),
+                'bolt_version' => Version::VERSION,
+                'database_platform' => $this->app['db']->getDatabasePlatform()->getName()
+            ]
+        ];
+        $this->writeMigrationFile($data, false, true);
+
+        return $this;
+    }
 
     /**
      * Export set ContentType's records to the export file.
