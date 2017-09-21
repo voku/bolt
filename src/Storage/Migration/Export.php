@@ -25,7 +25,7 @@ class Export extends AbstractMigration
     public function exportMetaInformation()
     {
         $data = [
-            'bolt_meta_information' => [
+            '__bolt_meta_information' => [
                 'date_generated' => date('Y-m-d H:i:s'),
                 'bolt_version' => Version::VERSION,
                 'database_platform' => $this->app['db']->getDatabasePlatform()->getName()

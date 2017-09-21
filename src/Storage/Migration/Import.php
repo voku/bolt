@@ -125,7 +125,7 @@ class Import extends AbstractMigration
             foreach ($data as $contenttypeslug => $values) {
 
                 // If we have meta information, output it, and continue with the next one.
-                if ($contenttypeslug === 'bolt_meta_information') {
+                if ($contenttypeslug === '__bolt_meta_information') {
                     foreach ($values as $key => $value) {
                         $this->setNotice(true)->setNoticeMessage("Meta information: {$key} = {$value}");
                     }
